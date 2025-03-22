@@ -16,6 +16,12 @@ public class Player : MonoBehaviour
     [SerializeField] private float dashCooldown;
     private float dashCooldownTimer = 0;
 
+    [Header("Attack info")]
+    private bool isAttacking;
+    private int comboCounter;
+
+
+
     private float xInput;
     private int facingDir = 1;
     private bool facingRight = true;
@@ -59,6 +65,11 @@ public class Player : MonoBehaviour
     {
         xInput = Input.GetAxisRaw("Horizontal");
 
+        if (Input.GetKeyDown(KeyCode.Mouse0))
+        {
+            isAttacking = true;
+        }
+
         if (Input.GetKeyDown(KeyCode.Space))
             Jump();
 
@@ -98,11 +109,15 @@ public class Player : MonoBehaviour
 
     private void AnimatorControllers()
     {
-        anim.SetFloat("yVelocity", rb.linearVelocityY);
         bool isMoving = rb.linearVelocityX != 0;
+
+        // Reference the data from the animator attached to this player game object
+        anim.SetFloat("yVelocity", rb.linearVelocityY);
         anim.SetBool("isMoving", isMoving);
         anim.SetBool("isGrounded", isGrounded);
         anim.SetBool("isDashing", dashTimer > 0);
+        anim.SetBool("isAttacking", isAttacking);
+        anim.SetInteger("comboCounter", comboCounter);
     }
 
     private void FlipController()
@@ -127,5 +142,9 @@ public class Player : MonoBehaviour
     private void OnDrawGizmos()
     {
         Gizmos.DrawLine(transform.position, new Vector3(transform.position.x, transform.position.y - groundCheckDistance));
+    }
+
+    public void SetAttackOver() {
+        isAttacking = false;
     }
 }
