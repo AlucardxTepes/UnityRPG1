@@ -17,8 +17,10 @@ public class Player : MonoBehaviour
     private float dashCooldownTimer = 0;
 
     [Header("Attack info")]
-    private bool isAttacking;
+    [SerializeField] private float comboTime = 0.3f;
     private int comboCounter;
+    private float comboTimeWindow;
+    private bool isAttacking;
 
 
 
@@ -41,15 +43,15 @@ public class Player : MonoBehaviour
     {
         Movement();
         CheckInput();
+        CollisionChecks();
 
 
         dashTimer -= Time.deltaTime; // countdown time regardless of FPS
+        comboTimeWindow -= Time.deltaTime;
         if (dashCooldownTimer > 0)
         {
             dashCooldownTimer -= Time.deltaTime;
         }
-
-        CollisionChecks();
 
         FlipController();
         AnimatorControllers();
@@ -67,7 +69,7 @@ public class Player : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Mouse0))
         {
-            isAttacking = true;
+            StartAttackEvent();
         }
 
         if (Input.GetKeyDown(KeyCode.Space))
@@ -77,9 +79,21 @@ public class Player : MonoBehaviour
             Dash();
     }
 
+    private void StartAttackEvent()
+    {
+        if (!isGrounded) 
+            return;
+        
+        if (comboTimeWindow < 0) // reset combo if time window has passed
+            comboCounter = 0;
+
+        isAttacking = true;
+        comboTimeWindow = comboTime;
+    }
+
     private void Dash()
     {
-        if (dashCooldownTimer <= 0)
+        if (dashCooldownTimer <= 0 && !isAttacking)
         {
             dashTimer = dashDuration; // start dash duration countdown
             dashCooldownTimer = dashCooldown;
@@ -88,10 +102,14 @@ public class Player : MonoBehaviour
 
     private void Movement()
     {
-        if (dashTimer > 0)
+        if (isAttacking) {
+            rb.linearVelocity = new Vector2(0,0); // stop movement while attacking
+        }
+        else if (dashTimer > 0)
         {
             // keep velY as 0 allows player to not fall as fast (floaty) when dashing while in the air
-            rb.linearVelocity = new Vector2(xInput * dashSpeed, 0);
+            // using facingDir instead of xInput allows dash to move player even dashing from idle
+            rb.linearVelocity = new Vector2(facingDir * dashSpeed, 0);
         }
         else
         {
@@ -144,7 +162,12 @@ public class Player : MonoBehaviour
         Gizmos.DrawLine(transform.position, new Vector3(transform.position.x, transform.position.y - groundCheckDistance));
     }
 
-    public void SetAttackOver() {
+    public void SetAttackOver()
+    {
         isAttacking = false;
+
+        comboCounter++;
+        if (comboCounter > 2)
+            comboCounter = 0;
     }
 }
